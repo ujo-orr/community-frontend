@@ -30,7 +30,10 @@ export default function PostCard({ post }: PostCardProps) {
         {isExpanded ? '본문 접기' : '본문 펼치기'}
       </button>
       <p id={bodyId} hidden={!isExpanded}>{post.body}</p>
-      <footer>{post.author} · <time dateTime={post.date}>{post.date}</time></footer>
+      <footer>
+        {post.author}
+        {post.date !== null && <> · <time dateTime={post.date}>{post.date}</time></>}
+      </footer>
     </article>
   )
 }
