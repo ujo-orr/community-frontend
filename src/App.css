@@ -15,6 +15,50 @@
   margin: 0 0 0.5rem;
 }
 
+.board-form {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: white;
+  border: 1px solid #d4dce6;
+  border-radius: 0.75rem;
+}
+
+.board-form h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.125rem;
+}
+
+.board-form fieldset,
+.board-form label {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.board-form fieldset {
+  gap: 0.75rem;
+  padding: 0;
+  border: 0;
+}
+
+.board-form input,
+.board-form textarea,
+.board-form select,
+.board-form button {
+  padding: 0.4rem 0.65rem;
+  border: 1px solid #aebdcf;
+  border-radius: 0.375rem;
+  font: inherit;
+}
+
+.board-form button {
+  justify-self: start;
+}
+
+.board-form [role='alert'] {
+  color: #a12626;
+}
+
 .post-list {
   display: grid;
   gap: 1rem;

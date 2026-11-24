@@ -1,16 +1,27 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import LoginForm from './components/LoginForm'
 import PostCard from './components/PostCard'
+import PostComposer from './components/PostComposer'
 import type { Post } from './posts'
 import { fetchPosts } from './postsApi'
 import './App.css'
 
-type PostsState =
-  | { status: 'loading' }
-  | { status: 'success'; posts: Post[]; totalElements: number }
-  | { status: 'error' }
-
 export default function App() {
-  const [state, setState] = useState<PostsState>({ status: 'loading' })
+  const [page, setPage] = useState<{ content: Post[]; totalElements: number } | null>(null)
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
+  const [revision, setRevision] = useState(0)
+  const [accessToken, setAccessToken] = useState<string | null>(null)
+  const [notice, setNotice] = useState('')
+
+  const handleUnauthorized = useCallback(() => {
+    setAccessToken(null)
+    setNotice('인증이 만료되었거나 유효하지 않습니다. 다시 로그인해 주세요.')
+  }, [])
+
+  function refreshPosts() {
+    setStatus('loading')
+    setRevision(previous => previous + 1)
+  }
 
   useEffect(() => {
     const controller = new AbortController()
@@ -20,37 +31,49 @@ export default function App() {
       try {
         const page = await fetchPosts(controller.signal)
         if (!controller.signal.aborted) {
-          setState({
-            status: 'success',
-            posts: page.content,
-            totalElements: page.totalElements,
-          })
+          setPage(page)
+          setStatus('success')
         }
       } catch {
         if (!controller.signal.aborted) {
-          setState({ status: 'error' })
+          setStatus('error')
         }
       }
     }
 
     void loadPosts()
     return () => controller.abort()
-  }, [])
+  }, [revision])
 
   return (
     <main className="board">
       <header className="board-header">
         <h1>게시글 목록</h1>
-        {state.status === 'success' && <span>총 {state.totalElements}건</span>}
+        {page && <span>총 {page.totalElements}건</span>}
       </header>
-      {state.status === 'loading' && <p role="status">게시글을 불러오는 중입니다.</p>}
-      {state.status === 'error' && (
-        <p role="alert">게시글을 불러오지 못했습니다. 서버 연결을 확인한 뒤 새로고침해 주세요.</p>
+      {notice && <p role="status">{notice}</p>}
+      {!accessToken && (
+        <LoginForm onLogin={token => {
+          setAccessToken(token)
+          setNotice('로그인했습니다.')
+        }} />
       )}
-      {state.status === 'success' && (
-        state.posts.length > 0 ? (
+      <PostComposer
+        accessToken={accessToken}
+        onUnauthorized={handleUnauthorized}
+        onRefreshPosts={refreshPosts}
+      />
+      {status === 'loading' && <p role="status">게시글을 불러오는 중입니다.</p>}
+      {status === 'error' && (
+        <>
+          <p role="alert">게시글 목록을 불러오지 못했습니다.</p>
+          <button type="button" onClick={refreshPosts}>목록 다시 불러오기</button>
+        </>
+      )}
+      {page && (
+        page.content.length > 0 ? (
           <ul className="post-list">
-            {state.posts.map(post => (
+            {page.content.map(post => (
               <li key={post.id}>
                 <PostCard post={post} />
               </li>

@@ -1,4 +1,57 @@
 import type { Post } from './posts'
+import { ApiError } from './apiError'
+
+export interface Category {
+  id: number
+  name: string
+}
+
+interface PostCreateRequest {
+  title: string
+  content: string
+  categoryId: number
+}
+
+function isPositiveId(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0
+}
+
+function isCategory(value: unknown): value is Category {
+  return typeof value === 'object' && value !== null
+    && 'id' in value && isPositiveId(value.id)
+    && 'name' in value && typeof value.name === 'string'
+}
+
+export async function fetchCategories(accessToken: string, signal: AbortSignal): Promise<Category[]> {
+  const response = await fetch('/api/categories', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    signal,
+  })
+  if (!response.ok) throw new ApiError(response.status)
+
+  const categories: unknown = await response.json()
+  if (!Array.isArray(categories) || !categories.every(isCategory)) {
+    throw new Error('카테고리 응답 형식 오류')
+  }
+  return categories
+}
+
+// 인증된 게시글 등록
+export async function createPost(request: PostCreateRequest, accessToken: string): Promise<number> {
+  const response = await fetch('/api/posts', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(request),
+  })
+  if (!response.ok) throw new ApiError(response.status)
+
+  const id: unknown = await response.json()
+  if (!isPositiveId(id)) throw new Error('게시글 등록 응답 형식 오류')
+  return id
+}
 
 interface PostResponse {
   id: number
